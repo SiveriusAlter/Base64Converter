@@ -1,58 +1,84 @@
 ﻿public static class Program
 {
-    public static void Main(string[] args)
-    {
-        string[] commands = ["-f", "-b"];
-        var message =
-            $"""
-             Используй Base64Converter.exe <{commands[0]}> <file> <base64file> чтобы конвертировать файл в Base64.
-             Используй Base64Converter.exe <{commands[1]}> <base64file> <file> чтобы конвертировать Base64 в файл.
-             """;
+    private const string CommandToBase64 = "-f";
+    private const string CommandFromBase64 = "-b";
 
+    private const string HelpMessage = $"""
+                                        Используйте:
+                                           Base64Converter.exe <{CommandToBase64}> <исходный_файл> <base64_файл> - конвертировать файл в Base64.
+                                           Используй Base64Converter.exe <{CommandFromBase64}> <base64_файл> <выходной_файл> - конвертировать Base64 в файл.
+                                        """;
+
+    public static int Main(string[] args)
+    {
         if (args.Length == 0)
         {
-            Console.WriteLine(message);
+            Console.WriteLine("Не указаны аргументы.");
+            Console.WriteLine(HelpMessage);
+            return 1;
         }
 
-        if (args[0] == commands[0])
+        if (args.Length != 3)
         {
-            var file = args[1];
-            var base64File = args[2];
-            ConvertFIleToBase64(file, base64File);
+            Console.WriteLine("Неверное количество аргументов");
+            Console.WriteLine(HelpMessage);
+            return 1;
         }
-        else if (args[0] == commands[1])
+
+        var command = args[0];
+        var inputFile = args[1];
+        var outputFile = args[2];
+
+        if (command == CommandToBase64)
         {
-            var file = args[2];
-            var base64File = args[1];
-            ConvertBase64ToFile(base64File, file);
+            ConvertFileToBase64(inputFile, outputFile);
+        }
+        else if (command == CommandFromBase64)
+        {
+            ConvertBase64ToFile(inputFile, outputFile);
         }
         else
         {
-            Console.WriteLine(message);
+            Console.WriteLine($"Неизвестная команда: {command}");
+            Console.WriteLine(HelpMessage);
+            return 1;
         }
+
+        return 0;
     }
 
-    private static void ConvertFIleToBase64(string fileName, string base64File)
+    private static void ConvertFileToBase64(string inputFileName, string outputFileName)
     {
-        var pathBase64 = Path.Combine(Environment.CurrentDirectory, base64File);
-        var pathFile = Path.Combine(Environment.CurrentDirectory, fileName);
+        var inputPath = Path.Combine(Environment.CurrentDirectory, inputFileName);
+        var outputPath = Path.Combine(Environment.CurrentDirectory, outputFileName);
 
-        var fileBytes = File.ReadAllBytes(pathFile);
+        if (!File.Exists(inputPath))
+        {
+            throw new FileNotFoundException($"Файл не найден: {inputPath}");
+        }
+
+        var fileBytes = File.ReadAllBytes(inputPath);
 
         var base64 = Convert.ToBase64String(fileBytes);
-        File.Create(pathFile).Close();
-        File.WriteAllText(pathBase64, base64);
+
+        File.WriteAllText(outputPath, base64);
     }
 
-    private static void ConvertBase64ToFile(string base64File, string fileName)
+    private static void ConvertBase64ToFile(string inputFileName, string outputFileName)
     {
-        var pathBase64 = Path.Combine(Environment.CurrentDirectory, base64File);
-        var pathFile = Path.Combine(Environment.CurrentDirectory, fileName);
+        var inputPath = Path.Combine(Environment.CurrentDirectory, inputFileName);
+        var outputPath = Path.Combine(Environment.CurrentDirectory, outputFileName);
 
-        var base64 = File.ReadAllText(pathBase64);
+        if (!File.Exists(inputPath))
+        {
+            throw new FileNotFoundException($"Файл не найден: {inputPath}");
+        }
+
+
+        var base64 = File.ReadAllText(inputPath);
 
         var fileBytes = Convert.FromBase64String(base64);
-        File.Create(pathFile).Close();
-        File.WriteAllBytes(pathFile, fileBytes);
+
+        File.WriteAllBytes(outputPath, fileBytes);
     }
 }
